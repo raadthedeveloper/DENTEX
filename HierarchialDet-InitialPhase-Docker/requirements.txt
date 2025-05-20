@@ -91,7 +91,7 @@ einops==0.6.1
 fvcore==0.1.5.post20221221
 matplotlib==3.7.1
 numpy==1.23.4
-opencv_python
+opencv-python>=4.5.0
 pandas==2.0.2
 Pillow==9.5.0
 pycocotools==2.0.6

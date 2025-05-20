@@ -8,6 +8,9 @@ from hierarchialdet.predictor import VisualizationDemo
 import argparse
 import SimpleITK as sitk
 import glob
+import cv2
+import numpy as np
+import torch
 
 
 list_ids = [
@@ -75,23 +78,21 @@ def custom_format_output(outputs, img_ids):
             category_id_3 = instance.pred_classes_3[0].item()
             img_id = img_ids[k]
             box = {
-                "name": f"{category_id_1} - {category_id_2} - {category_id_3}",
+                "name": f"Q{category_id_1}N{category_id_2}",
                 "corners": [
-                    [bbox_coords[0], bbox_coords[1], img_id],
-                    [bbox_coords[0], bbox_coords[3], img_id],
-                    [bbox_coords[2], bbox_coords[1], img_id],
-                    [bbox_coords[2], bbox_coords[3], img_id]
+                    [bbox_coords[0], bbox_coords[1]],
+                    [bbox_coords[0], bbox_coords[3]],
+                    [bbox_coords[2], bbox_coords[1]],
+                    [bbox_coords[2], bbox_coords[3]]
                 ],
                 "probability": instance.scores[0].item(),
             }
             boxes.append(box)
 
-        custom_annotations={
-        "name": "Regions of interest",
+    custom_annotations = {
         "type": "Multiple 2D bounding boxes",
-        "boxes": boxes,
-        "version": { "major": 1, "minor": 0 }
-        }
+        "boxes": boxes
+    }
     return custom_annotations
 
 
@@ -160,35 +161,35 @@ class Hierarchialdet:
         self.cfg.MODEL.RETINANET.SCORE_THRESH_TEST = args.confidence_threshold
         self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = args.confidence_threshold
         self.cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = args.confidence_threshold
+        self.cfg.MODEL.DEVICE = "cpu"  # Force CPU usage
         self.cfg.freeze()
         self.demo = VisualizationDemo(self.cfg, k=2)
 
     def process(self):
         self.setup()
 
-        #image_files = [f for f in os.listdir(self.input_dir) if os.path.isfile(os.path.join(self.input_dir, f))]
-
         all_outputs = []
         img_ids = []
         
-        file_path = glob.glob('/input/images/panoramic-dental-xrays/*.mha')[0]
-        image = sitk.ReadImage(file_path)
-        image_array = sitk.GetArrayFromImage(image)
-        print("test..")
-        for k in range(image_array.shape[2]):
-            image_name = "val_{}.png".format(k)
-            predictions, _ = self.demo.run_on_image(image_array[:,:,k,:])
-            instances = predictions["instances"]
-            all_outputs.append(instances)
-            for input_img in list_ids:
-                if input_img["file_name"] == image_name:
-                    img_id = input_img["id"]
-            img_ids.append(img_id)
-        coco_annotations = custom_format_output(all_outputs,img_ids)
-
-        output_file = "/output/abnormal-teeth-detection.json"
+        # Read the input image
+        image = cv2.imread('/input/input.png')
+        if image is None:
+            raise ValueError("Could not read input image")
+        
+        # Convert to RGB
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        # Run inference
+        predictions, _ = self.demo.run_on_image(image)
+        instances = predictions["instances"]
+        all_outputs.append(instances)
+        img_ids.append(1)  # Use a single image ID
+        
+        # Format and save results
+        results = custom_format_output(all_outputs, img_ids)
+        output_file = "/output/results.json"
         with open(output_file, "w") as f:
-            json.dump(coco_annotations, f)
+            json.dump(results, f)
 
         print("Inference completed. Results saved to", output_file)
 

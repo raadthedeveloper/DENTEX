@@ -13,7 +13,6 @@ docker volume create hierarchialdet-output-$VOLUME_SUFFIX
 # Do not change any of the parameters to docker run, these are fixed
 
 docker run --rm\
-        --gpus all \
         --memory="${MEM_LIMIT}" \
         --memory-swap="${MEM_LIMIT}" \
         --network="none" \
@@ -24,8 +23,6 @@ docker run --rm\
         -v $SCRIPTPATH/test/:/input/ \
         -v hierarchialdet-output-$VOLUME_SUFFIX:/output/ \
         hierarchialdet
-
-
 
 docker run --rm \
         -v hierarchialdet-output-$VOLUME_SUFFIX:/output/ \

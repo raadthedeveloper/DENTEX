@@ -1,0 +1,10 @@
+{
+    "type": "Multiple 2D bounding boxes",
+    "boxes": [
+        {
+            "corners": [[100, 100], [200, 100], [200, 200], [100, 200]],
+            "name": "Q1N1",
+            "probability": 0.95
+        }
+    ]
+} 
